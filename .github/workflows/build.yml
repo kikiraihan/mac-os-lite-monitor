@@ -1,10 +1,12 @@
-# Build LiteMonitor.app di mesin macOS GitHub, hasilnya bisa diunduh siap pakai
-name: Build LiteMonitor
+name: Build
 
+# Build otomatis di mesin macOS GitHub → pengguna tinggal unduh .app jadi
+# (tidak perlu Xcode Command Line Tools di Mac sendiri)
 on:
   push:
     branches: [main]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -12,29 +14,30 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build universal (Apple Silicon + Intel)
+      - name: Build LiteMonitor.app (universal)
+        run: ARCH=universal ./scripts/build.sh
+
+      - name: Buat installer & zip
         run: |
-          set -e
-          APP=LiteMonitor.app
-          ./build.sh   # bikin bundle + Info.plist
-          # ganti binary dengan versi universal (Apple Silicon + Intel)
-          swiftc -O -swift-version 5 -target arm64-apple-macos13.0 main.swift -o lm-arm64
-          swiftc -O -swift-version 5 -target x86_64-apple-macos13.0 main.swift -o lm-x86_64
-          lipo -create lm-arm64 lm-x86_64 -output "$APP/Contents/MacOS/LiteMonitor"
-          codesign --force --sign - "$APP"
-          ditto -c -k --keepParent "$APP" LiteMonitor.zip
+          ./scripts/make-installer.sh
+          ditto -c -k --keepParent build/LiteMonitor.app dist/LiteMonitor.zip
+          (cd dist && zip -q install-LiteMonitor.zip install-LiteMonitor.command)
 
       - uses: actions/upload-artifact@v4
         with:
           name: LiteMonitor
-          path: LiteMonitor.zip
+          path: |
+            dist/LiteMonitor.zip
+            dist/install-LiteMonitor.zip
 
       - name: Rilis (kalau push tag v*)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: LiteMonitor.zip
+          files: |
+            dist/LiteMonitor.zip
+            dist/install-LiteMonitor.zip

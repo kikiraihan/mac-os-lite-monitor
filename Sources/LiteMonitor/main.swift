@@ -1,5 +1,5 @@
 // LiteMonitor — indikator sistem ringan untuk menu bar macOS
-// Build: ./build.sh  (butuh Xcode Command Line Tools)
+// Build: ./scripts/build.sh  (butuh Xcode Command Line Tools)
 
 import Cocoa
 import IOKit.ps
@@ -44,9 +44,9 @@ func memoryInfo() -> (used: UInt64, total: UInt64) {
     }
     guard kr == KERN_SUCCESS else { return (0, total) }
     let page = UInt64(vm_kernel_page_size)
-    let internal = UInt64(stats.internal_page_count)
+    let internalPages = UInt64(stats.internal_page_count)
     let purgeable = UInt64(stats.purgeable_count)
-    let app = internal > purgeable ? internal - purgeable : 0
+    let app = internalPages > purgeable ? internalPages - purgeable : 0
     let used = (app + UInt64(stats.wire_count) + UInt64(stats.compressor_page_count)) * page
     return (min(used, total), total)
 }
@@ -223,8 +223,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ("showNet", "Jaringan"), ("showBat", "Baterai")]
     var metricItems: [NSMenuItem] = []
     var intervalItems: [NSMenuItem] = []
-    let compactItem = NSMenuItem(title: "Mode ringkas (1 baris)", action: #selector(toggleCompact), keyEquivalent: "")
-    let loginItem = NSMenuItem(title: "Buka saat login", action: #selector(toggleLogin), keyEquivalent: "")
+    let compactItem = NSMenuItem(title: "Mode ringkas (1 baris)", action: #selector(AppDelegate.toggleCompact), keyEquivalent: "")
+    let loginItem = NSMenuItem(title: "Buka saat login", action: #selector(AppDelegate.toggleLogin), keyEquivalent: "")
 
     func applicationDidFinishLaunching(_ n: Notification) {
         d.register(defaults: ["showCPU": true, "showRAM": true, "showDisk": false,
