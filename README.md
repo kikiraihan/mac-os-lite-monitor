@@ -18,6 +18,7 @@ Dibuat dengan Swift + AppKit murni, satu file sumber, tanpa dependensi.
 - Buka saat login
 - Ikon otomatis mengikuti tema terang/gelap
 - Hemat sumber daya: sekitar 15–25 MB RAM, CPU hampir 0%
+- Update ke versi terbaru langsung dari menu
 - Uninstall langsung dari menu
 
 ## Instalasi
@@ -57,6 +58,16 @@ macOS menyembunyikan ikon yang tidak muat, terutama di MacBook dengan notch.
 - Aktifkan **Mode ringkas**.
 - Matikan metrik yang tidak perlu.
 
+## Update
+
+Klik ikon LiteMonitor → **Cek pembaruan…**. LiteMonitor mengecek rilis terbaru di halaman Releases GitHub
+(otomatis juga saat dibuka dan sehari sekali; kalau ada versi baru, judul menu berubah jadi
+**Update tersedia: vX…**). Pilih **Update sekarang**: file `LiteMonitor.zip` diunduh, `LiteMonitor.app`
+lama diganti, lalu aplikasi dibuka lagi. Pengaturan tetap tersimpan.
+
+Kalau aplikasi dijalankan dari folder yang tidak bisa ditulis (atau langsung dari Downloads),
+halaman rilis dibuka supaya Anda bisa mengunduh manual.
+
 ## Uninstall
 
 Klik ikon LiteMonitor → **Uninstall LiteMonitor…**. LiteMonitor akan dihapus dari "Buka saat login",
@@ -85,7 +96,11 @@ LiteMonitor/
 
 ## Rilis
 
-Push tag versi, maka GitHub Actions akan build lalu melampirkan `LiteMonitor.zip` dan `install-LiteMonitor.zip` ke halaman Releases:
+**Otomatis:** naikkan versi di `Resources/Info.plist` (`CFBundleShortVersionString`, mis. `1.1` → `1.2`),
+lalu merge ke `main`. GitHub Actions akan build, membuat tag `v1.2`, dan rilis berisi `LiteMonitor.zip` dan
+`install-LiteMonitor.zip`. Kalau versinya tidak diubah, merge hanya di-build tanpa rilis baru.
+
+**Manual:** push tag versi, maka GitHub Actions akan build lalu melampirkan `LiteMonitor.zip` dan `install-LiteMonitor.zip` ke halaman Releases:
 
 ```bash
 git tag v1.0.0 && git push origin v1.0.0
