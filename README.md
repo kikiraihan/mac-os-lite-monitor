@@ -96,7 +96,11 @@ LiteMonitor/
 
 ## Rilis
 
-Push tag versi, maka GitHub Actions akan build lalu melampirkan `LiteMonitor.zip` dan `install-LiteMonitor.zip` ke halaman Releases:
+**Otomatis:** naikkan versi di `Resources/Info.plist` (`CFBundleShortVersionString`, mis. `1.1` → `1.2`),
+lalu merge ke `main`. GitHub Actions akan build, membuat tag `v1.2`, dan rilis berisi `LiteMonitor.zip` dan
+`install-LiteMonitor.zip`. Kalau versinya tidak diubah, merge hanya di-build tanpa rilis baru.
+
+**Manual:** push tag versi, maka GitHub Actions akan build lalu melampirkan `LiteMonitor.zip` dan `install-LiteMonitor.zip` ke halaman Releases:
 
 ```bash
 git tag v1.0.0 && git push origin v1.0.0
