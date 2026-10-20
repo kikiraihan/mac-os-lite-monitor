@@ -137,7 +137,7 @@ func textWidth(_ s: String, _ f: NSFont) -> CGFloat {
 func renderFull(_ cols: [Col]) -> NSImage {
     let labelFont = NSFont.systemFont(ofSize: 8.5, weight: .semibold)
     let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .semibold)
-    let gap: CGFloat = 5
+    let gap: CGFloat = 3 // rapat; label kolom sudah memberi jarak visual
     // lebar kolom dikunci pakai template supaya ikon tidak "goyang"
     let widths = cols.map { c -> CGFloat in
         let tf = c.topIsLabel ? labelFont : valueFont
@@ -444,17 +444,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         if d.bool(forKey: "showCPU") {
             let v = String(format: "%.0f%%", cpuPct)
-            cols.append(Col(top: "CPU", bottom: v, topIsLabel: true, template: "100%"))
+            cols.append(Col(top: "CPU", bottom: v, topIsLabel: true, template: "99%"))
             items.append(CompactItem(symbol: "cpu", text: v, template: "99%"))
         }
         if d.bool(forKey: "showRAM") {
             let v = String(format: "%.0f%%", memPct)
-            cols.append(Col(top: "RAM", bottom: v, topIsLabel: true, template: "100%"))
+            cols.append(Col(top: "RAM", bottom: v, topIsLabel: true, template: "99%"))
             items.append(CompactItem(symbol: "memorychip", text: v, template: "99%"))
         }
         if d.bool(forKey: "showDisk"), let dk = disk {
             let v = String(format: "%.0fGB", gbDec(dk.total - dk.used)) // sisa ruang
-            cols.append(Col(top: "SSD", bottom: v, topIsLabel: true, template: "999GB"))
+            cols.append(Col(top: "SSD", bottom: v, topIsLabel: true, template: "")) // jarang berubah → tanpa kunci lebar
             items.append(CompactItem(symbol: "internaldrive", text: v, template: "")) // jarang berubah → tanpa kunci lebar
         }
         if d.bool(forKey: "showNet") {
@@ -464,7 +464,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         if d.bool(forKey: "showBat"), let b = bat {
             let v = (b.onAC ? "⚡" : "") + "\(b.percent)%"
-            cols.append(Col(top: "BAT", bottom: v, topIsLabel: true, template: "⚡100%"))
+            cols.append(Col(top: "BAT", bottom: v, topIsLabel: true, template: "⚡99%"))
             items.append(CompactItem(symbol: b.onAC ? "battery.100.bolt" : "battery.100",
                                      text: "\(b.percent)%", template: "99%"))
         }
