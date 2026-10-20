@@ -357,6 +357,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let am = NSMenuItem(title: "Buka Activity Monitor", action: #selector(openActivityMonitor), keyEquivalent: "")
         am.target = self
         menu.addItem(am)
+        let un = NSMenuItem(title: "Uninstall LiteMonitor…", action: #selector(uninstall), keyEquivalent: "")
+        un.target = self
+        menu.addItem(un)
         menu.addItem(NSMenuItem(title: "Keluar", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
@@ -428,6 +431,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc func openActivityMonitor() {
         NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app"))
+    }
+
+    /// Hapus LiteMonitor dari Mac: login item, pengaturan, lalu .app dipindahkan ke Tong Sampah
+    @objc func uninstall() {
+        let a = NSAlert()
+        a.messageText = "Uninstall LiteMonitor?"
+        a.informativeText = "LiteMonitor akan dihapus dari 'Buka saat login', pengaturannya dihapus, lalu LiteMonitor.app dipindahkan ke Tong Sampah dan aplikasi ditutup."
+        a.alertStyle = .warning
+        a.addButton(withTitle: "Uninstall")
+        a.addButton(withTitle: "Batal")
+        NSApp.activate(ignoringOtherApps: true)
+        guard a.runModal() == .alertFirstButtonReturn else { return }
+
+        timer?.invalidate()
+        try? SMAppService.mainApp.unregister()
+        if let id = Bundle.main.bundleIdentifier {
+            d.removePersistentDomain(forName: id)
+            d.synchronize()
+        }
+        let appURL = Bundle.main.bundleURL
+        if appURL.pathExtension != "app" || (try? FileManager.default.trashItem(at: appURL, resultingItemURL: nil)) == nil {
+            // tidak punya izin tulis (mis. dipasang oleh admin lain) → minta pengguna menghapus manual
+            let f = NSAlert()
+            f.messageText = "LiteMonitor.app tidak bisa dipindahkan otomatis"
+            f.informativeText = "Pengaturan sudah dihapus. Seret LiteMonitor.app ke Tong Sampah secara manual."
+            f.runModal()
+            NSWorkspace.shared.activateFileViewerSelecting([appURL])
+        }
+        NSApp.terminate(nil)
     }
 }
 

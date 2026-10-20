@@ -18,6 +18,7 @@ Dibuat dengan Swift + AppKit murni, satu file sumber, tanpa dependensi.
 - Buka saat login
 - Ikon otomatis mengikuti tema terang/gelap
 - Hemat sumber daya: sekitar 15–25 MB RAM, CPU hampir 0%
+- Uninstall langsung dari menu
 
 ## Instalasi
 
@@ -55,6 +56,19 @@ macOS menyembunyikan ikon yang tidak muat, terutama di MacBook dengan notch.
 - Tahan **⌘** lalu seret ikon LiteMonitor ke paling kanan, dekat jam.
 - Aktifkan **Mode ringkas**.
 - Matikan metrik yang tidak perlu.
+
+## Uninstall
+
+Klik ikon LiteMonitor → **Uninstall LiteMonitor…**. LiteMonitor akan dihapus dari "Buka saat login",
+pengaturannya dihapus, lalu `LiteMonitor.app` dipindahkan ke Tong Sampah.
+
+Atau manual lewat Terminal:
+
+```bash
+pkill -x LiteMonitor
+rm -rf /Applications/LiteMonitor.app
+defaults delete id.local.litemonitor
+```
 
 ## Struktur repo
 
