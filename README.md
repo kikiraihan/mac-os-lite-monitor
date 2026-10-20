@@ -42,8 +42,8 @@ bash ~/Downloads/install-LiteMonitor.command
 **Opsi C: build dari source**
 
 ```bash
-git clone <url-repo-ini>
-cd LiteMonitor
+git clone https://github.com/kikiraihan/mac-os-lite-monitor.git
+cd mac-os-lite-monitor
 ./scripts/build.sh
 cp -R build/LiteMonitor.app /Applications/
 ```
