@@ -193,6 +193,176 @@ func renderCompact(_ items: [CompactItem]) -> NSImage {
     return img
 }
 
+// MARK: - Update (cek rilis terbaru di GitHub Releases)
+
+final class Updater: NSObject {
+    let repo = "kikiraihan/mac-os-lite-monitor"
+    let appName = "LiteMonitor"
+    let menuItem = NSMenuItem(title: "Cek pembaruan…", action: #selector(Updater.checkNow), keyEquivalent: "")
+    var latest: (version: String, zip: URL?, page: URL)?
+    var timer: Timer?
+
+    static var current: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0" }
+
+    /// "v1.2.0" lebih baru dari "1.1"?
+    static func isNewer(_ a: String, than b: String) -> Bool {
+        func parts(_ s: String) -> [Int] {
+            s.trimmingCharacters(in: CharacterSet(charactersIn: "vV")).split(separator: ".")
+                .map { part in Int(part.prefix(while: { $0.isNumber })) ?? 0 }
+        }
+        let x = parts(a), y = parts(b)
+        for i in 0..<max(x.count, y.count) {
+            let p = i < x.count ? x[i] : 0, q = i < y.count ? y[i] : 0
+            if p != q { return p > q }
+        }
+        return false
+    }
+
+    var hasUpdate: Bool { latest.map { Updater.isNewer($0.version, than: Updater.current) } ?? false }
+
+    override init() {
+        super.init()
+        menuItem.target = self
+    }
+
+    /// Cek diam-diam saat aplikasi dibuka lalu sehari sekali; kalau ada versi baru, judul menu berubah
+    func start() {
+        check { [weak self] _ in self?.refreshMenu() }
+        let t = Timer(timeInterval: 24 * 3600, repeats: true) { [weak self] _ in
+            self?.check { _ in self?.refreshMenu() }
+        }
+        t.tolerance = 3600 // tidak perlu tepat waktu → hemat energi
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
+    }
+
+    func refreshMenu() {
+        menuItem.isEnabled = true
+        if let l = latest, hasUpdate { menuItem.title = "Update tersedia: \(l.version)…" }
+        else { menuItem.title = "Cek pembaruan…" }
+    }
+
+    /// Ambil info rilis terbaru; done(true) kalau berhasil (dipanggil di main thread)
+    func check(_ done: @escaping (Bool) -> Void) {
+        guard let url = URL(string: "https://api.github.com/repos/\(repo)/releases/latest") else { return done(false) }
+        var req = URLRequest(url: url)
+        req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        req.timeoutInterval = 15
+        URLSession.shared.dataTask(with: req) { data, _, _ in
+            var info: (String, URL?, URL)?
+            if let data, let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let tag = j["tag_name"] as? String,
+               let page = (j["html_url"] as? String).flatMap({ URL(string: $0) }) {
+                let assets = j["assets"] as? [[String: Any]] ?? []
+                let zip = assets.first { ($0["name"] as? String) == "\(self.appName).zip" }?["browser_download_url"] as? String
+                info = (tag, zip.flatMap { URL(string: $0) }, page)
+            }
+            DispatchQueue.main.async {
+                if let info { self.latest = (info.0, info.1, info.2) }
+                done(info != nil)
+            }
+        }.resume()
+    }
+
+    @objc func checkNow() {
+        menuItem.title = "Mengecek pembaruan…"
+        menuItem.isEnabled = false
+        check { [weak self] ok in
+            guard let self else { return }
+            self.refreshMenu()
+            let a = NSAlert()
+            NSApp.activate(ignoringOtherApps: true)
+            guard ok, let l = self.latest else {
+                a.messageText = "Gagal mengecek pembaruan"
+                a.informativeText = "Periksa koneksi internet, lalu coba lagi."
+                a.runModal()
+                return
+            }
+            guard self.hasUpdate else {
+                a.messageText = "\(self.appName) sudah versi terbaru"
+                a.informativeText = "Versi terpasang: \(Updater.current)"
+                a.runModal()
+                return
+            }
+            a.messageText = "\(self.appName) \(l.version) tersedia"
+            a.informativeText = "Versi terpasang: \(Updater.current).\n\n\(self.appName) akan ditutup, diganti versi baru, lalu dibuka lagi. Pengaturan tetap tersimpan."
+            a.addButton(withTitle: "Update sekarang")
+            a.addButton(withTitle: "Lihat rilis")
+            a.addButton(withTitle: "Nanti")
+            switch a.runModal() {
+            case .alertFirstButtonReturn: self.install(l)
+            case .alertSecondButtonReturn: NSWorkspace.shared.open(l.page)
+            default: break
+            }
+        }
+    }
+
+    /// Unduh .zip rilis, ekstrak, lalu ganti .app lama setelah aplikasi ini keluar
+    func install(_ l: (version: String, zip: URL?, page: URL)) {
+        let dest = Bundle.main.bundleURL
+        // tanpa file .zip, bukan .app, atau folder tidak bisa ditulis → unduh manual dari halaman rilis
+        guard let zip = l.zip, dest.pathExtension == "app",
+              FileManager.default.isWritableFile(atPath: dest.deletingLastPathComponent().path) else {
+            NSWorkspace.shared.open(l.page)
+            return
+        }
+        menuItem.title = "Mengunduh \(l.version)…"
+        menuItem.isEnabled = false
+        URLSession.shared.downloadTask(with: zip) { tmp, _, err in
+            let fm = FileManager.default
+            let work = fm.temporaryDirectory.appendingPathComponent("\(self.appName)-update-\(UUID().uuidString)")
+            let zipFile = work.appendingPathComponent("update.zip")
+            let newApp = work.appendingPathComponent("\(self.appName).app")
+            var problem: String?
+            if let tmp {
+                do {
+                    // file sementara dihapus setelah handler ini selesai → pindahkan sekarang
+                    try fm.createDirectory(at: work, withIntermediateDirectories: true)
+                    try fm.moveItem(at: tmp, to: zipFile)
+                    let unzip = Process()
+                    unzip.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+                    unzip.arguments = ["-x", "-k", zipFile.path, work.path]
+                    try unzip.run()
+                    unzip.waitUntilExit()
+                    if unzip.terminationStatus != 0 || !fm.fileExists(atPath: newApp.path) {
+                        problem = "File rilis tidak berisi \(self.appName).app."
+                    }
+                } catch { problem = error.localizedDescription }
+            } else {
+                problem = err?.localizedDescription ?? "Unduhan gagal."
+            }
+            DispatchQueue.main.async {
+                if let problem { return self.fail(problem, l.page) }
+                // skrip kecil: tunggu aplikasi ini keluar, tukar .app (lama dicadangkan dulu), lalu buka lagi
+                let script = """
+                while kill -0 "$1" 2>/dev/null; do sleep 0.2; done
+                if mv "$3" "$4"; then
+                  if mv "$2" "$3"; then rm -rf "$4"; else mv "$4" "$3"; fi
+                fi
+                xattr -cr "$3" 2>/dev/null
+                open "$3"
+                """
+                let p = Process()
+                p.executableURL = URL(fileURLWithPath: "/bin/sh")
+                p.arguments = ["-c", script, "sh", String(getpid()), newApp.path, dest.path,
+                               work.appendingPathComponent("old.app").path]
+                do { try p.run() } catch { return self.fail(error.localizedDescription, l.page) }
+                NSApp.terminate(nil)
+            }
+        }.resume()
+    }
+
+    func fail(_ msg: String, _ page: URL) {
+        refreshMenu()
+        let a = NSAlert()
+        a.messageText = "Update gagal"
+        a.informativeText = "\(msg)\n\nHalaman rilis akan dibuka supaya Anda bisa mengunduh manual."
+        NSApp.activate(ignoringOtherApps: true)
+        a.runModal()
+        NSWorkspace.shared.open(page)
+    }
+}
+
 // MARK: - Aplikasi
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
@@ -201,6 +371,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let d = UserDefaults.standard
 
     let cpu = CPUSampler()
+    let updater = Updater()
     let net = NetSampler()
     var timer: Timer?
     var tick = 0
@@ -237,6 +408,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         _ = cpu.sample(); _ = net.sample() // sampel awal (baseline)
         refresh(full: true)
         startTimer()
+        updater.start()
     }
 
     func startTimer() {
@@ -357,6 +529,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let am = NSMenuItem(title: "Buka Activity Monitor", action: #selector(openActivityMonitor), keyEquivalent: "")
         am.target = self
         menu.addItem(am)
+        menu.addItem(updater.menuItem)
         let un = NSMenuItem(title: "Uninstall LiteMonitor…", action: #selector(uninstall), keyEquivalent: "")
         un.target = self
         menu.addItem(un)

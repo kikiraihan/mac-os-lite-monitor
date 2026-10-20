@@ -18,6 +18,7 @@ Dibuat dengan Swift + AppKit murni, satu file sumber, tanpa dependensi.
 - Buka saat login
 - Ikon otomatis mengikuti tema terang/gelap
 - Hemat sumber daya: sekitar 15–25 MB RAM, CPU hampir 0%
+- Update ke versi terbaru langsung dari menu
 - Uninstall langsung dari menu
 
 ## Instalasi
@@ -56,6 +57,16 @@ macOS menyembunyikan ikon yang tidak muat, terutama di MacBook dengan notch.
 - Tahan **⌘** lalu seret ikon LiteMonitor ke paling kanan, dekat jam.
 - Aktifkan **Mode ringkas**.
 - Matikan metrik yang tidak perlu.
+
+## Update
+
+Klik ikon LiteMonitor → **Cek pembaruan…**. LiteMonitor mengecek rilis terbaru di halaman Releases GitHub
+(otomatis juga saat dibuka dan sehari sekali; kalau ada versi baru, judul menu berubah jadi
+**Update tersedia: vX…**). Pilih **Update sekarang**: file `LiteMonitor.zip` diunduh, `LiteMonitor.app`
+lama diganti, lalu aplikasi dibuka lagi. Pengaturan tetap tersimpan.
+
+Kalau aplikasi dijalankan dari folder yang tidak bisa ditulis (atau langsung dari Downloads),
+halaman rilis dibuka supaya Anda bisa mengunduh manual.
 
 ## Uninstall
 
