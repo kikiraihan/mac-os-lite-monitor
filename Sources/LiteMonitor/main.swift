@@ -137,7 +137,7 @@ func textWidth(_ s: String, _ f: NSFont) -> CGFloat {
 func renderFull(_ cols: [Col]) -> NSImage {
     let labelFont = NSFont.systemFont(ofSize: 8.5, weight: .semibold)
     let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 10, weight: .semibold)
-    let gap: CGFloat = 8
+    let gap: CGFloat = 5
     // lebar kolom dikunci pakai template supaya ikon tidak "goyang"
     let widths = cols.map { c -> CGFloat in
         let tf = c.topIsLabel ? labelFont : valueFont
@@ -166,7 +166,8 @@ func renderFull(_ cols: [Col]) -> NSImage {
 func renderCompact(_ items: [CompactItem]) -> NSImage {
     let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
     let cfg = NSImage.SymbolConfiguration(pointSize: 10, weight: .medium)
-    let icon: CGFloat = 13, iconGap: CGFloat = 2, gap: CGFloat = 7
+    // jarak dibuat rapat; lebar angka dikunci ke template 2 digit ("99%") supaya tidak ada ruang kosong
+    let icon: CGFloat = 13, iconGap: CGFloat = 1, gap: CGFloat = 4
     let widths = items.map { ceil(max(textWidth($0.text, font), textWidth($0.template, font))) }
     var total: CGFloat = 0
     for w in widths { total += icon + iconGap + w }
@@ -444,17 +445,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if d.bool(forKey: "showCPU") {
             let v = String(format: "%.0f%%", cpuPct)
             cols.append(Col(top: "CPU", bottom: v, topIsLabel: true, template: "100%"))
-            items.append(CompactItem(symbol: "cpu", text: v, template: "100%"))
+            items.append(CompactItem(symbol: "cpu", text: v, template: "99%"))
         }
         if d.bool(forKey: "showRAM") {
             let v = String(format: "%.0f%%", memPct)
             cols.append(Col(top: "RAM", bottom: v, topIsLabel: true, template: "100%"))
-            items.append(CompactItem(symbol: "memorychip", text: v, template: "100%"))
+            items.append(CompactItem(symbol: "memorychip", text: v, template: "99%"))
         }
         if d.bool(forKey: "showDisk"), let dk = disk {
             let v = String(format: "%.0fGB", gbDec(dk.total - dk.used)) // sisa ruang
             cols.append(Col(top: "SSD", bottom: v, topIsLabel: true, template: "999GB"))
-            items.append(CompactItem(symbol: "internaldrive", text: v, template: "999GB"))
+            items.append(CompactItem(symbol: "internaldrive", text: v, template: "")) // jarang berubah → tanpa kunci lebar
         }
         if d.bool(forKey: "showNet") {
             let up = fmtRate(rate.up, short: true), dn = fmtRate(rate.down, short: true)
@@ -465,7 +466,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let v = (b.onAC ? "⚡" : "") + "\(b.percent)%"
             cols.append(Col(top: "BAT", bottom: v, topIsLabel: true, template: "⚡100%"))
             items.append(CompactItem(symbol: b.onAC ? "battery.100.bolt" : "battery.100",
-                                     text: "\(b.percent)%", template: "100%"))
+                                     text: "\(b.percent)%", template: "99%"))
         }
 
         guard let button = statusItem.button else { return }
