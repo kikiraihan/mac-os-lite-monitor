@@ -137,7 +137,7 @@ func textWidth(_ s: String, _ f: NSFont) -> CGFloat {
 func renderFull(_ cols: [Col]) -> NSImage {
     let labelFont = NSFont.systemFont(ofSize: 8, weight: .semibold)
     let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 9.5, weight: .semibold)
-    let gap: CGFloat = 1 // rapat; label kolom sudah memberi jarak visual
+    let gap: CGFloat = 5 // padding tipis antar kolom supaya angka tidak menempel, tetap compact
     // lebar kolom dikunci pakai template supaya ikon tidak "goyang"
     let widths = cols.map { c -> CGFloat in
         let tf = c.topIsLabel ? labelFont : valueFont
@@ -167,7 +167,7 @@ func renderCompact(_ items: [CompactItem]) -> NSImage {
     let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
     let cfg = NSImage.SymbolConfiguration(pointSize: 10, weight: .medium)
     // jarak dibuat rapat; lebar angka dikunci ke template 2 digit ("99%") supaya tidak ada ruang kosong
-    let icon: CGFloat = 13, iconGap: CGFloat = 1, gap: CGFloat = 3
+    let icon: CGFloat = 13, iconGap: CGFloat = 2, gap: CGFloat = 6
     let widths = items.map { ceil(max(textWidth($0.text, font), textWidth($0.template, font))) }
     var total: CGFloat = 0
     for w in widths { total += icon + iconGap + w }
@@ -460,7 +460,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if d.bool(forKey: "showNet") {
             let up = fmtRate(rate.up, short: true), dn = fmtRate(rate.down, short: true)
             cols.append(Col(top: "↑" + up, bottom: "↓" + dn, topIsLabel: false, template: "↓999.9K"))
-            items.append(CompactItem(symbol: "arrow.up.arrow.down", text: "↓" + dn, template: "↓999.9K"))
+            items.append(CompactItem(symbol: "arrow.up.arrow.down", text: "↓" + dn, template: "↓99.9K")) // template lebih pendek supaya tidak ada ruang kosong besar sebelum baterai
         }
         if d.bool(forKey: "showBat"), let b = bat {
             let v = (b.onAC ? "⚡" : "") + "\(b.percent)%"
