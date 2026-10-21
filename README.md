@@ -100,6 +100,8 @@ LiteMonitor/
 lalu merge ke `main`. GitHub Actions akan build, membuat tag `v1.2`, dan rilis berisi `LiteMonitor.zip` dan
 `install-LiteMonitor.zip`. Kalau versinya tidak diubah, merge hanya di-build tanpa rilis baru.
 
+Aturan penomoran versi (`va.b.c`: major / fitur & style mayor / bugfix & style minor) ada di [AGENTS.md](AGENTS.md).
+
 **Manual:** push tag versi, maka GitHub Actions akan build lalu melampirkan `LiteMonitor.zip` dan `install-LiteMonitor.zip` ke halaman Releases:
 
 ```bash
